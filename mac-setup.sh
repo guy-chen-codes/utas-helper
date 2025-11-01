@@ -30,6 +30,25 @@ keygen() {
     [[ -d "$HOME/.ssh" ]] || \
         ssh-keygen -b 4096 -C "${username}@utas.edu.au" -t ed25519
 }
+
+ZSH_MODULE_DIR="$HOME/.config/zsh"
+
+if [[ ! -d "$ZSH_MODULE_DIR" ]]; then
+  return 1
+fi
+
+echo "⚙️  Loading Zsh profile modules from '$ZSH_MODULE_DIR'..."
+
+# --- Load all alias and function files ---
+for module_file in "$ZSH_MODULE_DIR"/aliases*.zsh "$ZSH_MODULE_DIR"/functions*.zsh; do
+  if [[ -f "$module_file" ]]; then
+    source "$module_file"
+    echo "  -> Loaded $(basename "$module_file")"
+  fi
+done
+
+echo "✅ Zsh profile loaded successfully."
+
 EOF
 
 # Configure Git
@@ -72,41 +91,15 @@ source ~/.zshrc
 git clone https://github.com/Guy-Chan/utas-helper.git ~/repos/utas-helper
 
 # Install GitHub CLI and Raycast
-brew install gh raycast
-
-# Lock iTerm2 version to 3.4.23
-brew tap-new $USER/homebrew-lockversions
-cd $(brew --repo $USER/homebrew-lockversions)
-mkdir -p Casks/i
-
-tee Casks/i/iterm2.rb <<EOF >/dev/null
-cask "iterm2" do
-version "3.4.23"
-sha256 "82ee82369d14d452c2d3c8886d460e2466e46dc517eb3d96b2b04c97b0c23d49"
-url "https://iterm2.com/downloads/stable/iTerm2-#{version.dots_to_underscores}.zip"
-name "iTerm2"
-desc "Terminal emulator as alternative to Apple's Terminal app"
-homepage "https://iterm2.com/"
-auto_updates true
-app "iTerm.app"
-zap trash: [
-"~/Library/Application Support/iTerm",
-"~/Library/Application Support/iTerm2",
-"~/Library/Preferences/com.googlecode.iterm2.plist",
-"~/Library/Saved Application State/com.googlecode.iterm2.savedState",
-"~/Library/Caches/com.googlecode.iterm2",
-"~/Library/Caches/com.googlecode.iterm2.snapshot",
-]
-end
-EOF
-
-brew install --cask $USER/homebrew-lockversions/iterm2
+# Lock iTerm2 version to 3.4.23 via customized tap
+brew install gh raycast guy-chen-codes/tap/iterm2
 
 # Install Zoom by fetching the package and extracting it manually
-brew fetch zoom
-xar -xf ~/Library/Caches/Homebrew/Cask/zoom--*.pkg
-cpio -i --file zoomus.pkg/Payload
-mv zoom.us.app ~/Applications
+# It won't work as for enabling zoom accessing camera still requires sudo
+# brew fetch zoom
+# xar -xf ~/Library/Caches/Homebrew/Cask/zoom--*.pkg
+# cpio -i --file zoomus.pkg/Payload
+# mv zoom.us.app ~/Applications
 
 # Install VSCode extensions
 code --install-extension GitHub.copilot
@@ -118,7 +111,8 @@ code --install-extension ms-vscode-remote.remote-ssh
 code --install-extension foxundermoon.shell-format
 
 # Install additional useful utilities
-brew install tlrc jid pandoc jq zip dua-cli visualboyadvance-m altserver
+brew install jid jq zip dua-cli
+# brew install tlrc jid pandoc jq zip dua-cli visualboyadvance-m altserver
 
 # Personal setup, requires function `customization` to be defined beforehand.
 if [ -n "$(type -t customization)" ] && [ "$(type -t customization)" = function ]; then
